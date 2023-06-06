@@ -1,2 +1,6 @@
 # Optimization_Adaquant
-Optimization project
+ToDo:
+- load dataset: ImageNet (Agata)
+- model - ResNest18
+- create calibration dataset
+- clean code (main.ipynb) (Martyna)
