@@ -41,7 +41,7 @@ def optimize_layer_adaquant(layer, in_out, test_batch_size=100, train_batch_size
                                       layer.quantize_weight.running_zero_point], lr=lr_qpw)
 
     ### LOOP THROUGH ITERATIONS
-    losses = [] # optional
+    # loss =[] # optional
     for j in (tqdm(range(iters)) if progress else range(iters)):
 
         ### CHOOSE INPUTS and OUTPUTS
@@ -52,7 +52,7 @@ def optimize_layer_adaquant(layer, in_out, test_batch_size=100, train_batch_size
         ### PUT INPUT THROUGH LAYER AND SAVE LOSS
         qout = layer(train_inp)
         loss = F.mse_loss(qout, train_out)
-        losses.append(loss.item()) # optonal
+        #losses.append(loss.item()) # optonal
 
         ### ZERO OPTIMIZER GRADIENTS
         opt_w.zero_grad()
@@ -68,13 +68,6 @@ def optimize_layer_adaquant(layer, in_out, test_batch_size=100, train_batch_size
         if hasattr(layer, 'bias') and layer.bias is not None: opt_bias.step()
         opt_qparams_in.step()
         opt_qparams_w.step()
-
-            ### OPTIONAL - save losses
-            # if len(losses) < 10:
-            #     total_loss = loss.item()
-            # else:
-            #     total_loss = np.mean(losses[-10:])
-            # print("mse out: {}, pc mean loss: {}, total: {}".format(mse_out.item(), mean_loss.item(), total_loss))
 
     ### METRIC
     mse_after = F.mse_loss(layer(test_inp), test_out)
