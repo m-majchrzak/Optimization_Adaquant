@@ -79,7 +79,6 @@ def create_calibration_dataset(path,
             if i<n_images and name.endswith(".JPEG"):
                 image_path=os.path.join(root, name)
                 image=cv2.imread(image_path)
-                image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
                 image_name=image_path.split('\\')[-1]
                 image_path=image_path.replace(path_to_replace, new_path)
                 path_without_image_name=image_path.replace(image_name, '')
