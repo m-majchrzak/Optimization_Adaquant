@@ -2,8 +2,10 @@ import os
 import cv2
 import random
 import numpy as np
+np.random.seed(123)
 import torch
 from torch.utils import data
+from pathlib import Path
 
 from torchvision import datasets
 from torchvision import transforms
@@ -67,6 +69,24 @@ def load_dataset(directory, batch_size, subset_size=2, if_subset=True):
 
     return dataloader
 
-# use od dataloader:
+# use of dataloader:
 #  for epoch in range(number_of_epochs):
             # for i, data in enumerate(dataloader, 0):
+
+def create_calibration_dataset(path, 
+                               n_images=2, 
+                               path_to_replace='/kaggle_tiny_imagenet/tiny-imagenet-200/dataset_tiny_imagenet/train',
+                               new_path='/calibration_datasets/tiny_imagenet/train'):
+    for root, _, files in os.walk(path):
+        new_list = list(range(1, 500))
+        selected_indices=np.random.choice(new_list, size=n_images, replace=False)
+        if 'images' in root:
+            first_name=files[0]
+            for i in range(len(selected_indices)):
+                name=first_name.replace('_0', f'_{selected_indices[i]}')
+                image_path=os.path.join(root, name)
+                image=cv2.imread(image_path)
+                new_root=root.replace(path_to_replace, new_path)
+                Path(new_root).mkdir(parents=True, exist_ok=True)
+                path_new=os.path.join(new_root, name)
+                cv2.imwrite(path_new, image)
