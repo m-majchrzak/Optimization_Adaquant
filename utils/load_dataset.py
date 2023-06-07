@@ -13,9 +13,9 @@ from torchvision import transforms
 random.seed(123)
 torch.manual_seed(123)
 
-path_to_dataset='./kaggle_tiny_imagenet/tiny-imagenet-200/dataset_tiny_imagenet'
-which_dataset = '/train' #'/val' #'/test'
-data_directory=path_to_dataset+which_dataset
+# data_directory='E:/DL/mini_imagenet_validation/val'
+# path_to_replace='E:/DL/mini_imagenet_validation/val'
+# new_path='E:/calibration_datasets/tiny_imagenet/train'
 
 device = torch.device("cuda:0" if (torch.cuda.is_available()) else "cpu")
 is_gpu = 1 if device == "cude:0" else 0
@@ -69,24 +69,21 @@ def load_dataset(directory, batch_size, subset_size=2, if_subset=True):
 
     return dataloader
 
-# use of dataloader:
-#  for epoch in range(number_of_epochs):
-            # for i, data in enumerate(dataloader, 0):
-
 def create_calibration_dataset(path, 
                                n_images=2, 
                                path_to_replace='/kaggle_tiny_imagenet/tiny-imagenet-200/dataset_tiny_imagenet/train',
                                new_path='/calibration_datasets/tiny_imagenet/train'):
-    for root, _, files in os.walk(path):
-        new_list = list(range(1, 500))
-        selected_indices=np.random.choice(new_list, size=n_images, replace=False)
-        if 'images' in root:
-            first_name=files[0]
-            for i in range(len(selected_indices)):
-                name=first_name.replace('_0', f'_{selected_indices[i]}')
+   for root, dirs, files in os.walk(path):
+        i=0
+        for name in files:
+            if i<n_images and name.endswith(".JPEG"):
                 image_path=os.path.join(root, name)
                 image=cv2.imread(image_path)
-                new_root=root.replace(path_to_replace, new_path)
-                Path(new_root).mkdir(parents=True, exist_ok=True)
-                path_new=os.path.join(new_root, name)
-                cv2.imwrite(path_new, image)
+                image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+                image_name=image_path.split('\\')[-1]
+                image_path=image_path.replace(path_to_replace, new_path)
+                path_without_image_name=image_path.replace(image_name, '')
+                Path(path_without_image_name).mkdir(parents=True, exist_ok=True)
+                image_path=image_path.replace(image_name, 'calib_'+image_name)
+                cv2.imwrite(image_path, image)
+                i+=1
