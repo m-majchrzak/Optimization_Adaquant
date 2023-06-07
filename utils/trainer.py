@@ -8,7 +8,7 @@ from utils.meters import AverageMeter, accuracy
 from utils.mixup import MixUp
 from random import sample
 from functools import partial
-from models.modules.quantize import QConv2d, QLinear, RangeBN, quant_round_constrain
+from utils.quantize import QConv2d, QLinear, quant_round_constrain
 import numpy as np 
 from torch.nn import functional as F
 import copy 
