@@ -58,6 +58,7 @@ class OnlineMeter(object):
 
 def accuracy(output, target, topk=(1,)):
     """Computes the precision@k for the specified values of k"""
+    #print(f"Output shape: {output.shape}, Target shape: {target.shape}")
     maxk = max(topk)
     batch_size = target.size(0)
 

@@ -52,10 +52,10 @@ def _mixup(mixup_modules, alpha, batch_size):
 
 class Trainer(object):
 
-    def __init__(self, model,pruner, criterion, optimizer=None,
+    def __init__(self, model, pruner, criterion, optimizer=None,
                  device_ids=[0], device=torch.cuda, dtype=torch.float,
                  distributed=False, local_rank=-1, adapt_grad_norm=None,
-                 mixup=None, loss_scale=1., grad_clip=-1, print_freq=100, epoch=0, update_only_th=False,optimize_rounding=False):
+                 mixup=None, loss_scale=1., grad_clip=-1, print_freq=100, epoch=0, update_only_th=False, optimize_rounding=False):
         self._model = model
         self.fp_state_dict=copy.deepcopy(model.state_dict())
         self.criterion = criterion
@@ -243,7 +243,13 @@ class Trainer(object):
             return results
 
         end = time.time()
-        for i, (inputs, target) in (enumerate(data_loader)):
+
+        #for i, (inputs, target) in (enumerate(data_loader)):
+        for i, data in enumerate(data_loader, 0):
+            inputs, target = data
+            inputs = inputs.to(self.device)
+            target = target.to(self.device)
+        ##
             if training and duplicates > 1 and self.adapt_grad_norm is not None \
                     and i % self.adapt_grad_norm == 0:
                 grad_mean = 0
@@ -281,7 +287,8 @@ class Trainer(object):
                     self.model=self.pruner.prune_layers(self.model)
 
             # measure accuracy and record loss
-            prec1, prec5 = accuracy(output, target, topk=(1, 5))
+            #prec1, prec5 = accuracy(output, target, topk=(1, 5))
+            prec1, prec5 = accuracy(output, target, topk=(1, 1))
             meters['loss'].update(float(loss), inputs.size(0))
             meters['prec1'].update(float(prec1), inputs.size(0))
             meters['prec5'].update(float(prec5), inputs.size(0))
