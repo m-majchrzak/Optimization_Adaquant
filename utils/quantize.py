@@ -1,9 +1,8 @@
 from collections import namedtuple
-import math
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from torch.autograd.function import InplaceFunction, Function
+from torch.autograd.function import InplaceFunction
 import scipy.optimize as opt
 import numpy as np
 import os

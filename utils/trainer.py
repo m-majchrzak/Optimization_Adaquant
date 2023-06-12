@@ -1,12 +1,10 @@
 import time
-import logging
+#import logging
 import torch
 import torch.nn as nn
 import torch.nn.parallel
 from torch.nn.utils import clip_grad_norm_
 from utils.meters import AverageMeter, accuracy
-from utils.mixup import MixUp
-from random import sample
 from functools import partial
 from utils.quantize import QConv2d, QLinear, quant_round_constrain
 import numpy as np 
@@ -40,38 +38,28 @@ def _average_duplicates(outputs, target, batch_first=True):
     return outputs
 
 
-def _mixup(mixup_modules, alpha, batch_size):
-    mixup_layer = None
-    if len(mixup_modules) > 0:
-        for m in mixup_modules:
-            m.reset()
-        mixup_layer = sample(mixup_modules, 1)[0]
-        mixup_layer.sample(alpha, batch_size)
-    return mixup_layer
-
 
 class Trainer(object):
 
-    def __init__(self, model, pruner, criterion, optimizer=None,
+    def __init__(self, model, criterion, optimizer, prunner=None,
                  device_ids=[0], device=torch.cuda, dtype=torch.float,
                  distributed=False, local_rank=-1, adapt_grad_norm=None,
-                 mixup=None, loss_scale=1., grad_clip=-1, print_freq=100, epoch=0, update_only_th=False, optimize_rounding=False):
-        self._model = model
+                 loss_scale=1., grad_clip=-1, print_freq=100, epoch=0, update_only_th=False, optimize_rounding=False):
+        self.model = model
         self.fp_state_dict=copy.deepcopy(model.state_dict())
         self.criterion = criterion
         self.epoch = epoch
         self.training_steps = 0
         self.optimizer = optimizer
+        self.prunner = prunner
         self.device = device
         self.dtype = dtype
         self.local_rank = local_rank
         self.print_freq = print_freq
         self.grad_clip = grad_clip
-        self.mixup = mixup
         self.grad_scale = None
         self.loss_scale = loss_scale
         self.adapt_grad_norm = adapt_grad_norm
-        self.pruner=pruner
         self.iter = 0
         self.update_only_th = update_only_th
         self.optimize_rounding = optimize_rounding
@@ -144,13 +132,6 @@ class Trainer(object):
             mixup = None
             if training:
                 self.optimizer.pre_forward()
-                if self.mixup is not None:
-                    input_mixup = MixUp()
-                    mixup_modules = [input_mixup]  # input mixup
-                    mixup_modules += [m for m in self.model.modules()
-                                      if isinstance(m, MixUp)]
-                    mixup = _mixup(mixup_modules, self.mixup, inputs.size(0))
-                    inputs = input_mixup(inputs)
 
             # compute output
             output = self.model(inputs)
@@ -260,11 +241,11 @@ class Trainer(object):
                 grad_all = float(self._grad_norm(
                     *_flatten_duplicates(inputs, target, batch_first)))
                 self.grad_scale = grad_mean / grad_all
-                logging.info('New loss scale: %s', self.grad_scale)
+                #logging.info('New loss scale: %s', self.grad_scale)
 
             # measure data loading time
             meters['data'].update(time.time() - end)
-            if duplicates > 1:  # multiple versions for each sample (dim 1)
+            if duplicates > 1:  
                 inputs, target = _flatten_duplicates(inputs, target, batch_first,
                                                      expand_target=not average_output)
 
@@ -282,8 +263,8 @@ class Trainer(object):
                 with torch.no_grad():
                     if training:
                         compression_rate = self.pruner.calc_param_masks(self.model,i%self.print_freq==0,i+self.epoch*len(data_loader))
-                        if i%self.print_freq==0:
-                            logging.info('Total compression ratio is: ' + str(compression_rate))
+                        #if i%self.print_freq==0:
+                            #logging.info('Total compression ratio is: ' + str(compression_rate))
                     self.model=self.pruner.prune_layers(self.model)
 
             # measure accuracy and record loss
@@ -299,21 +280,21 @@ class Trainer(object):
             meters['step'].update(time.time() - end)
             end = time.time()
 
-            if i % self.print_freq == 0:
-                report = str('{phase} - Epoch: [{0}][{1}/{2}]\t'
-                             'Time {meters[step].val:.3f} ({meters[step].avg:.3f})\t'
-                             'Data {meters[data].val:.3f} ({meters[data].avg:.3f})\t'
-                             'Loss {meters[loss].val:.7f} ({meters[loss].avg:.7f})\t'
-                             'Prec@1 {meters[prec1].val:.6f} ({meters[prec1].avg:.6f})\t'
-                             'Prec@5 {meters[prec5].val:.6f} ({meters[prec5].avg:.6f})\t'
-                             .format(
-                                 self.epoch, i, len(data_loader),
-                                 phase='TRAINING' if training else 'EVALUATING',
-                                 meters=meters))
-                if 'grad' in meters.keys():
-                    report += 'Grad {meters[grad].val:.3f} ({meters[grad].avg:.3f})'\
-                        .format(meters=meters)
-                logging.info(report)
+            #if i % self.print_freq == 0:
+            #    report = str('{phase} - Epoch: [{0}][{1}/{2}]\t'
+            #                 'Time {meters[step].val:.3f} ({meters[step].avg:.3f})\t'
+            #                 'Data {meters[data].val:.3f} ({meters[data].avg:.3f})\t'
+            #                 'Loss {meters[loss].val:.7f} ({meters[loss].avg:.7f})\t'
+            #                 'Prec@1 {meters[prec1].val:.6f} ({meters[prec1].avg:.6f})\t'
+            #                 'Prec@5 {meters[prec5].val:.6f} ({meters[prec5].avg:.6f})\t'
+            #                 .format(
+            #                     self.epoch, i, len(data_loader),
+            #                     phase='TRAINING' if training else 'EVALUATING',
+            #                     meters=meters))
+            #    if 'grad' in meters.keys():
+            #        report += 'Grad {meters[grad].val:.3f} ({meters[grad].avg:.3f})'\
+            #            .format(meters=meters)
+                #logging.info(report)
             if num_steps is not None and i >= num_steps or (self.update_only_th and training and i>2):
                 break
         if self.pruner is not None:

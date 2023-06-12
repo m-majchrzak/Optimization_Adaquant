@@ -1,13 +1,7 @@
 import torch
 import torch.nn as nn
-import torchvision.transforms as transforms
 import math
-from utils.se import SEBlock
-from .modules.quantize import QConv2d,QLinear, RangeBN
-#from .modules.quantize import QConv2d_o as QConv2d
-#from .modules.quantize import QLinear_o as QLinear 
-#from .modules.quantize import RangeBN
-__all__ = ['resnet', 'resnet_se']
+from utils.quantize import QConv2d, QLinear
 
 class Lambda(nn.Module):
     def __init__(self):
@@ -253,85 +247,4 @@ class ResNet_imagenet(ResNet):
                 {'epoch': 80, 'input_size': 224, 'batch_size': 512},
             ]
 
-
-class ResNet_cifar(ResNet):
-
-    def __init__(self, num_classes=10, inplanes=16,
-                 block=BasicBlock, depth=18, width=[16, 32, 64],
-                 groups=[1, 1, 1], residual_block=None,batch_norm=True, num_bits=8, num_bits_weight=8, perC=True, measure=False, cal_qparams=False):
-        super(ResNet_cifar, self).__init__()
-        #inplanes=4
-        #width=[4, 8, 16]
-        self.inplanes = inplanes
-        n = int((depth - 2) / 6)
-        self.conv1 = QConv2d(3, self.inplanes, kernel_size=3, stride=1, padding=1,
-                               bias=not batch_norm,num_bits=num_bits,num_bits_weight=num_bits_weight,perC=perC, measure=measure)
-        self.bn1 = depBatchNorm2d(batch_norm,self.inplanes)
-        self.relu = nn.ReLU(inplace=False)
-        self.maxpool = lambda x: x
-        self.layer1 = self._make_layer(block, width[0], n, groups=groups[
-                                       0], residual_block=residual_block,batch_norm=batch_norm, num_bits=num_bits,num_bits_weight=num_bits_weight,perC=perC, measure=measure,  cal_qparams=cal_qparams)
-        self.layer2 = self._make_layer(
-            block, width[1], n, stride=2, groups=groups[1], residual_block=residual_block,batch_norm=batch_norm, num_bits=num_bits,num_bits_weight=num_bits_weight,perC=perC, measure=measure, cal_qparams=cal_qparams)
-        self.layer3 = self._make_layer(
-            block, width[2], n, stride=2, groups=groups[2], residual_block=residual_block,batch_norm=batch_norm, num_bits=num_bits,num_bits_weight=num_bits_weight,perC=perC, measure=measure, cal_qparams=cal_qparams)
-        self.layer4 = lambda x: x
-        self.avgpool = nn.AvgPool2d(8)
-        self.fc = nn.Linear(width[-1], num_classes)
-        if batch_norm:
-            init_model(self)
-        self.regime = [
-            {'epoch': 0, 'optimizer': 'SGD', 'lr': 1e-1,
-             'weight_decay': 0, 'momentum': 0.9},
-            {'epoch': 81, 'lr': 1e-2},
-            {'epoch': 122, 'lr': 1e-3, 'weight_decay': 0},
-            {'epoch': 164, 'lr': 1e-4}
-        ]
-
-
-def resnet(**config):
-    dataset = config.pop('dataset', 'imagenet')
-    
-    bn_norm = config.pop('bn_norm', None)
-    if bn_norm is not None:
-        from .modules.lp_norm import L1BatchNorm2d, TopkBatchNorm2d
-        if bn_norm == 'L1':
-            torch.nn.BatchNorm2d = L1BatchNorm2d
-        if bn_norm == 'TopK':
-            torch.nn.BatchNorm2d = TopkBatchNorm2d
-
-    if dataset == 'imagenet':
-        config.setdefault('num_classes', 1000)
-        depth = config.pop('depth', 50)
-        if depth == 18:
-            config.update(dict(block=BasicBlock,
-                               layers=[2, 2, 2, 2],
-                               expansion=1))
-        if depth == 34:
-            config.update(dict(block=BasicBlock,
-                               layers=[3, 4, 6, 3],
-                               expansion=1))
-        if depth == 50:
-            config.update(dict(block=Bottleneck, layers=[3, 4, 6, 3]))
-        if depth == 101:
-            config.update(dict(block=Bottleneck, layers=[3, 4, 23, 3]))
-        if depth == 152:
-            config.update(dict(block=Bottleneck, layers=[3, 8, 36, 3]))
-
-        return ResNet_imagenet(**config)
-
-    elif dataset == 'cifar10':
-        config.setdefault('num_classes', 10)
-        config.setdefault('depth', 44)
-        return ResNet_cifar(block=BasicBlock, **config)
-
-    elif dataset == 'cifar100':
-        config.setdefault('num_classes', 100)
-        config.setdefault('depth', 44)
-        return ResNet_cifar(block=BasicBlock, **config)
-
-
-def resnet_se(**config):
-    config['residual_block'] = SEBlock
-    return resnet(**config)
     

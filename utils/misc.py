@@ -1,8 +1,6 @@
 import random
 import numpy as np
 import torch
-import torch.nn as nn
-from torch.utils.checkpoint import checkpoint, checkpoint_sequential
 
 torch_dtypes = {
     'float': torch.float,
@@ -51,35 +49,3 @@ def set_global_seeds(i):
     np.random.seed(i)
     random.seed(i)
 
-
-class CheckpointModule(nn.Module):
-    def __init__(self, module, num_segments=1):
-        super(CheckpointModule, self).__init__()
-        assert num_segments == 1 or isinstance(module, nn.Sequential)
-        self.module = module
-        self.num_segments = num_segments
-
-    def forward(self, x):
-        if self.num_segments > 1:
-            return checkpoint_sequential(self.module, self.num_segments, x)
-        else:
-            return checkpoint(self.module, x)
-
-
-def normalize_module_name(layer_name):
-    """Normalize a module's name.
-
-    PyTorch let's you parallelize the computation of a model, by wrapping a model with a
-    DataParallel module.  Unfortunately, this changs the fully-qualified name of a module,
-    even though the actual functionality of the module doesn't change.
-    Many time, when we search for modules by name, we are indifferent to the DataParallel
-    module and want to use the same module name whether the module is parallel or not.
-    We call this module name normalization, and this is implemented here.
-    """
-    modules = layer_name.split('.')
-    try:
-        idx = modules.index('module')
-    except ValueError:
-        return layer_name
-    del modules[idx]
-    return '.'.join(modules)
