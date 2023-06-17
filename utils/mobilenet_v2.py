@@ -5,8 +5,8 @@ import math
 import torch.nn.functional as F
 from torch.nn.modules.utils import _pair
 import torchvision.transforms as transforms
-from models.resnet import depBatchNorm2d
-from .modules.quantize import QConv2d, QLinear, RangeBN
+from utils.resnet import depBatchNorm2d
+from utils.quantize import QConv2d, QLinear, RangeBN
 __all__ = ['mobilenet_v2']
 
 
