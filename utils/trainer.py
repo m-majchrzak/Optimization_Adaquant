@@ -41,7 +41,7 @@ def _average_duplicates(outputs, target, batch_first=True):
 
 class Trainer(object):
 
-    def __init__(self, model, criterion, optimizer, prunner=None,
+    def __init__(self, model, criterion, optimizer, pruner=None,
                  device_ids=[0], device=torch.cuda, dtype=torch.float,
                  distributed=False, local_rank=-1, adapt_grad_norm=None,
                  loss_scale=1., grad_clip=-1, print_freq=100, epoch=0, update_only_th=False, optimize_rounding=False):
@@ -51,7 +51,7 @@ class Trainer(object):
         self.epoch = epoch
         self.training_steps = 0
         self.optimizer = optimizer
-        self.prunner = prunner
+        self.pruner = pruner
         self.device = device
         self.dtype = dtype
         self.local_rank = local_rank
