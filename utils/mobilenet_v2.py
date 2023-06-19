@@ -145,6 +145,7 @@ class MobileNetV2(nn.Module):
         # weight initialization
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
+                print("ala ma kota")
                 nn.init.kaiming_normal_(m.weight, mode='fan_out')
                 if m.bias is not None:
                     nn.init.zeros_(m.bias)
@@ -152,6 +153,7 @@ class MobileNetV2(nn.Module):
                 nn.init.ones_(m.weight)
                 nn.init.zeros_(m.bias)
             elif isinstance(m, nn.Linear):
+                print("Ala ma dwa koty")
                 nn.init.normal_(m.weight, 0, 0.01)
                 nn.init.zeros_(m.bias)
 
@@ -172,6 +174,8 @@ def mobilenet_v2(**config):
     r"""MobileNet v2 model architecture from the `"MobileNetV2: Inverted Residuals and Linear Bottlenecks"
     <https://arxiv.org/abs/1801.04381>`_ paper.
     """
-    dataset = config.pop('dataset', 'imagenet')
-    assert dataset == 'imagenet'
-    return MobileNetV2(**config)
+    # dataset = config.pop('dataset', 'imagenet')
+    # assert dataset == 'imagenet'
+    # return MobileNetV2(**config)
+    model_default=torch.hub.load('chenyaofo/pytorch-cifar-models', 'cifar10_mobilenetv2_x1_0', pretrained=True)
+    return model_default
