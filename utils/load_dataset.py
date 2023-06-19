@@ -13,10 +13,6 @@ from torchvision import transforms
 random.seed(123)
 torch.manual_seed(123)
 
-# data_directory='E:/DL/mini_imagenet_validation/val'
-# path_to_replace='E:/DL/mini_imagenet_validation/val'
-# new_path='E:/calibration_datasets/tiny_imagenet/train'
-
 device = torch.device("cuda:0" if (torch.cuda.is_available()) else "cpu")
 is_gpu = 1 if device == "cude:0" else 0
 
@@ -37,15 +33,13 @@ def read_images(path, n_images=2):
     return images
 
 
-def load_dataset(directory, batch_size, subset_size=2, if_subset=True):
+def load_dataset(directory, batch_size, subset_size=100, if_subset=True):
 
     image_folder = datasets.ImageFolder(
         root=directory,
         transform=transforms.Compose([
-            transforms.Resize(256),
-            transforms.CenterCrop(224),
             transforms.ToTensor(),
-            transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+            transforms.Normalize((0.5,0.5,0.5), (0.5, 0.5, 0.5)),
         ])
     )
  
@@ -71,8 +65,8 @@ def load_dataset(directory, batch_size, subset_size=2, if_subset=True):
 
 def create_calibration_dataset(path, 
                                n_images=2, 
-                               path_to_replace='/kaggle_tiny_imagenet/tiny-imagenet-200/dataset_tiny_imagenet/train',
-                               new_path='/calibration_datasets/tiny_imagenet/train'):
+                               path_to_replace='./calibration_datasets_cifar10/calibration_datasets/cifar_10/train',
+                               new_path='./cifar_10/train'):
    for root, dirs, files in os.walk(path):
         i=0
         for name in files:
