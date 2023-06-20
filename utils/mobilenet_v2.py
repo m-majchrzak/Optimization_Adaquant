@@ -77,7 +77,7 @@ class InvertedResidual(nn.Module):
 
 class MobileNetV2(nn.Module):
     def __init__(self,
-                 num_classes=1000,
+                 num_classes=10,
                  width_mult=1.0,
                  inverted_residual_setting=None,
                  round_nearest=8,
@@ -145,7 +145,7 @@ class MobileNetV2(nn.Module):
         # weight initialization
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
-                print("ala ma kota")
+                # print("ala ma kota")
                 nn.init.kaiming_normal_(m.weight, mode='fan_out')
                 if m.bias is not None:
                     nn.init.zeros_(m.bias)
@@ -153,7 +153,7 @@ class MobileNetV2(nn.Module):
                 nn.init.ones_(m.weight)
                 nn.init.zeros_(m.bias)
             elif isinstance(m, nn.Linear):
-                print("Ala ma dwa koty")
+                # print("Ala ma dwa koty")
                 nn.init.normal_(m.weight, 0, 0.01)
                 nn.init.zeros_(m.bias)
 
