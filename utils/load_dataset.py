@@ -38,8 +38,12 @@ def load_dataset(directory, batch_size, subset_size=100, if_subset=True):
     image_folder = datasets.ImageFolder(
         root=directory,
         transform=transforms.Compose([
-            transforms.ToTensor(),
-            transforms.Normalize((0.5,0.5,0.5), (0.5, 0.5, 0.5)),
+            # transforms.ToTensor(),
+            # transforms.Normalize((0.5,0.5,0.5), (0.5, 0.5, 0.5)),
+                transforms.RandomHorizontalFlip(),
+                transforms.ColorJitter(),
+                transforms.RandomRotation(10),
+                transforms.ToTensor()
         ])
     )
  

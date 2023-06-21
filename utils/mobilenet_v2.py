@@ -176,6 +176,6 @@ def mobilenet_v2(**config):
     """
     # dataset = config.pop('dataset', 'imagenet')
     # assert dataset == 'imagenet'
-    # return MobileNetV2(**config)
-    model_default=torch.hub.load('chenyaofo/pytorch-cifar-models', 'cifar10_mobilenetv2_x1_0', pretrained=True)
-    return model_default
+    return MobileNetV2(**config)
+    # model_default=torch.hub.load('chenyaofo/pytorch-cifar-models', 'cifar10_mobilenetv2_x1_0', pretrained=True)
+    # return model_default
