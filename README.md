@@ -1,6 +1,6 @@
 # Repository for the project about AdaQuant method
 
-Created by: Agata Kaczmarek, Martyna Majchrzak, Władysław Olejnik.
+Solution to the project by: Agata Kaczmarek, Martyna Majchrzak, Władysław Olejnik.
 
 To run the AdaQuant for one of the models from `models` folder, run notebook `notebook_with_usage.ipynb`. Before running, it is necessary to download data from the below link. The preparation of the data after downloading is described in the `readme.txt` in `data` folder.
 
