@@ -174,8 +174,4 @@ def mobilenet_v2(**config):
     r"""MobileNet v2 model architecture from the `"MobileNetV2: Inverted Residuals and Linear Bottlenecks"
     <https://arxiv.org/abs/1801.04381>`_ paper.
     """
-    # dataset = config.pop('dataset', 'imagenet')
-    # assert dataset == 'imagenet'
     return MobileNetV2(**config)
-    # model_default=torch.hub.load('chenyaofo/pytorch-cifar-models', 'cifar10_mobilenetv2_x1_0', pretrained=True)
-    # return model_default

@@ -69,18 +69,12 @@ def calculate_qparams(x, num_bits, flatten_dims=_DEFAULT_FLATTEN, reduce_dim=0, 
         x = x.transpose(0,1)
     with torch.no_grad():
         x_flat = x.flatten(*flatten_dims)
-        if quant_mode =='mean_std' and num_bits<8: #If you want to apply only on the activation add "and reduce_dim is not None"
+        if quant_mode =='mean_std' and num_bits<8:
             mu   = x_flat.mean() if x_flat.dim() == 1 else x_flat.mean(-1)
             std  = x_flat.std() if x_flat.dim() == 1 else x_flat.std(-1)
             b = torch.abs(x_flat-mu).mean() if x_flat.dim() == 1 else torch.mean(torch.abs(x_flat-mu.unsqueeze(1)),-1)
             minv = x_flat.min() if x_flat.dim() == 1 else x_flat.min(-1)[0]
             maxv = x_flat.max() if x_flat.dim() == 1 else x_flat.max(-1)[0]
-            #print((b-std).abs().max(),x.shape)
-            ## Asic
-            #const = alpha_laplas_positive[num_bits] if reduce_dim is not None else alpha_laplas[num_bits] 
-            #min_values = _deflatten_as(torch.max(mu - const*b,minv), x)  
-            #max_values = _deflatten_as(torch.min(mu + const*b,maxv), x)
-            ## Welling
             min_values = _deflatten_as(torch.max(mu - 6*std,minv), x)  
             max_values = _deflatten_as(torch.min(mu + 6*std,maxv), x)
         else:
@@ -98,7 +92,6 @@ def calculate_qparams(x, num_bits, flatten_dims=_DEFAULT_FLATTEN, reduce_dim=0, 
                 min_values = min_values.min(reduce_dim, keepdim=keepdim)[0]
                 max_values = max_values.max(reduce_dim, keepdim=keepdim)[0]
 
-        # TODO: re-add true zero computation
         min_values[min_values > 0] = 0
         max_values[max_values < 0] = 0
         range_values = max_values - min_values
@@ -114,7 +107,6 @@ class UniformQuantize(InplaceFunction):
                 reduce_dim=0, dequantize=True, signed=True, stochastic=False, inplace=False):
 
         ctx.inplace = inplace
-        #if (num_bits is None and qparams.num_bits>4) or (num_bits is not None and num_bits>4 and input.dim()>2):                                                                         
         if ctx.inplace:
             ctx.mark_dirty(input)
             output = input
@@ -274,8 +266,6 @@ def quantize_grad(x, num_bits=None, qparams=None, flatten_dims=_DEFAULT_FLATTEN_
 
 
 class QuantMeasure(nn.Module):
-    """docstring for QuantMeasure."""
-
     def __init__(self, num_bits=8, shape_measure=(1,), flatten_dims=_DEFAULT_FLATTEN,
                  inplace=False, dequantize=True, stochastic=False, momentum=0.1, measure=False,per_ch_input=False,reduce_dim=0, cal_qparams=False):
         super(QuantMeasure, self).__init__()
@@ -331,8 +321,6 @@ class QuantMeasure(nn.Module):
 
 
 class QuantThUpdate(nn.Module):
-    """docstring for QuantMeasure."""
-
     def __init__(self, num_bits=8, shape_measure=(1,), flatten_dims=_DEFAULT_FLATTEN,
                  inplace=False, dequantize=True, stochastic=False, momentum=0.1, measure=False,per_ch_input=False,reduce_dim=0):
         super(QuantThUpdate, self).__init__()
@@ -360,7 +348,6 @@ class QuantThUpdate(nn.Module):
 
 
 class QConv2d(nn.Conv2d):
-    """docstring for QConv2d."""
 
     def __init__(self, in_channels, out_channels, kernel_size,
                  stride=1, padding=0, dilation=1, groups=1, bias=True, num_bits=8, num_bits_weight=8, num_bits_grad=None, perC=True, biprecision=False, measure=False, cal_qparams=False):
@@ -387,11 +374,7 @@ class QConv2d(nn.Conv2d):
 
     def forward(self, input):
         qinput = self.quantize_input(input) if self.quantize else input
-        qweight = self.quantize_weight(self.weight * self.equ_scale) if self.quantize and not self.cal_params else self.weight
-        #if not self.measure:
-        #    import pdb; pdb.set_trace()
-        #else:
-        #    print('measuring')    
+        qweight = self.quantize_weight(self.weight * self.equ_scale) if self.quantize and not self.cal_params else self.weight  
         if not self.measure and os.environ.get('DEBUG')=='True':
             assert  qinput.unique().numel()<=2**self.num_bits
             assert  qweight[0].unique().numel()<=2**self.num_bits_weight
@@ -413,8 +396,6 @@ class QConv2d(nn.Conv2d):
 
 
 class QLinear(nn.Linear):
-    """docstring for QConv2d."""
-
     def __init__(self, in_features, out_features, bias=True, num_bits=8, num_bits_weight=8, num_bits_grad=None, perC=True, biprecision=False,measure=False, cal_qparams=False):
         super(QLinear, self).__init__(in_features, out_features, bias)
         self.num_bits = num_bits

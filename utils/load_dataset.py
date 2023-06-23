@@ -3,13 +3,14 @@ import numpy as np
 import torch
 from torchvision import transforms
 from .utils_functions import set_seeds
-
 from .kaggle_cifar_10_dataset import KaggleCIFAR10Dataset
 
 set_seeds()
 
 
 def load_dataset(cal_data_dir, cal_labels_dir, train_data_dir, train_labels_dir):
+    """load dataset to datatloaders"""
+
     dataset = KaggleCIFAR10Dataset(
         cal_data_dir, 
         cal_labels_dir, 
