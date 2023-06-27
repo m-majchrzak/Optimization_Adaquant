@@ -69,8 +69,6 @@ class Trainer(object):
         if update_only_th and not optimize_rounding:
             for name,p in model.named_parameters():
                 if 'fc' not in name and 'bias' not in name:
-                # if 'fc' not in name and 'bias' not in name and '.weight' not in name:
-                # if 'zero_point' not in name and 'range' not in name and 'fc' not in name and 'bias' not in name and 'running_min' not in name and 'running_max' not in name and 'equ_scale' not in name:
                     p.requires_grad=False
 
         if distributed:
@@ -82,7 +80,7 @@ class Trainer(object):
         else:
             self.model = model
         
-        self.bias_mean = {} #collections.defaultdict(list)
+        self.bias_mean = {}
         for name, module in self.model.named_modules():
             module.register_forward_hook(partial(self.save_activation,name))
 
@@ -195,7 +193,6 @@ class Trainer(object):
                         trange = sd[key]
                         tzp = sd[key.replace('range','zero_point')]
                         weights_name = key.replace('quantize_weight.running_range','weight')
-                        #import pdb; pdb.set_trace()
                         t1 = self.fp_state_dict[weights_name.replace('module.','')]
                         t2 = sd[weights_name]
                         new_weight = quant_round_constrain(t1, t2, trange, tzp)
@@ -224,13 +221,11 @@ class Trainer(object):
             return results
 
         end = time.time()
-
-        #for i, (inputs, target) in (enumerate(data_loader)):
         for i, data in enumerate(data_loader, 0):
             inputs, target = data
             inputs = inputs.to(self.device)
             target = target.to(self.device)
-        ##
+        
             if training and duplicates > 1 and self.adapt_grad_norm is not None \
                     and i % self.adapt_grad_norm == 0:
                 grad_mean = 0
@@ -241,7 +236,6 @@ class Trainer(object):
                 grad_all = float(self._grad_norm(
                     *_flatten_duplicates(inputs, target, batch_first)))
                 self.grad_scale = grad_mean / grad_all
-                #logging.info('New loss scale: %s', self.grad_scale)
 
             # measure data loading time
             meters['data'].update(time.time() - end)
@@ -263,8 +257,6 @@ class Trainer(object):
                 with torch.no_grad():
                     if training:
                         compression_rate = self.pruner.calc_param_masks(self.model,i%self.print_freq==0,i+self.epoch*len(data_loader))
-                        #if i%self.print_freq==0:
-                            #logging.info('Total compression ratio is: ' + str(compression_rate))
                     self.model=self.pruner.prune_layers(self.model)
 
             # measure accuracy and record loss
@@ -280,21 +272,6 @@ class Trainer(object):
             meters['step'].update(time.time() - end)
             end = time.time()
 
-            #if i % self.print_freq == 0:
-            #    report = str('{phase} - Epoch: [{0}][{1}/{2}]\t'
-            #                 'Time {meters[step].val:.3f} ({meters[step].avg:.3f})\t'
-            #                 'Data {meters[data].val:.3f} ({meters[data].avg:.3f})\t'
-            #                 'Loss {meters[loss].val:.7f} ({meters[loss].avg:.7f})\t'
-            #                 'Prec@1 {meters[prec1].val:.6f} ({meters[prec1].avg:.6f})\t'
-            #                 'Prec@5 {meters[prec5].val:.6f} ({meters[prec5].avg:.6f})\t'
-            #                 .format(
-            #                     self.epoch, i, len(data_loader),
-            #                     phase='TRAINING' if training else 'EVALUATING',
-            #                     meters=meters))
-            #    if 'grad' in meters.keys():
-            #        report += 'Grad {meters[grad].val:.3f} ({meters[grad].avg:.3f})'\
-            #            .format(meters=meters)
-                #logging.info(report)
             if num_steps is not None and i >= num_steps or (self.update_only_th and training and i>2):
                 break
         if self.pruner is not None:
